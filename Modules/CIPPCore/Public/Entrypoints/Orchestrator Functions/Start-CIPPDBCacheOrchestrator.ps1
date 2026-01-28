@@ -22,14 +22,17 @@ function Start-CIPPDBCacheOrchestrator {
             return
         }
 
-        $Queue = New-CippQueueEntry -Name 'Database Cache Collection' -TotalTasks $TenantList.Count
-        $Batch = foreach ($Tenant in $TenantList) {
-            [PSCustomObject]@{
-                FunctionName = 'CIPPDBCacheData'
-                TenantFilter = $Tenant.defaultDomainName
-                QueueId      = $Queue.RowKey
-                QueueName    = "DB Cache - $($Tenant.defaultDomainName)"
-            }
+        $TaskCount = $TenantList.Count
+
+        $Queue = New-CippQueueEntry -Name 'Database Cache Collection' -TotalTasks $TaskCount
+        $Batch = [system.collections.generic.list[object]]::new()
+        foreach ($Tenant in $TenantList) {
+            $Batch.Add([PSCustomObject]@{
+                    FunctionName = 'CIPPDBCacheData'
+                    TenantFilter = $Tenant.defaultDomainName
+                    QueueId      = $Queue.RowKey
+                    QueueName    = "DB Cache - $($Tenant.defaultDomainName)"
+                })
         }
         Write-Host "Created queue $($Queue.RowKey) for database cache collection of $($TenantList.Count) tenants"
         Write-Host "Starting batch of $($Batch.Count) cache collection activities"
